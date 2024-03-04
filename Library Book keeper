@@ -1,0 +1,192 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <iomanip>
+
+using namespace std;
+
+// Structure to represent a book
+struct Book {
+    string title;
+    string author;
+    string ISBN;
+    bool available;
+};
+
+// Structure to represent a transaction (book checkout)
+struct Transaction {
+    string borrowerName;
+    string ISBN;
+    bool returned;
+};
+
+// Structure to represent a fine calculation
+struct Fine {
+    string borrowerName;
+    double amount;
+};
+
+// Function to add a book to the library database
+void addBook(vector<Book>& books) {
+    Book book;
+    cout << "Enter book title: ";
+    getline(cin >> ws, book.title);
+    cout << "Enter author name: ";
+    getline(cin, book.author);
+    cout << "Enter ISBN: ";
+    cin >> book.ISBN;
+    book.available = true;
+    books.push_back(book);
+    cout << "Book added successfully." << endl;
+}
+
+// Function to search for a book in the library
+void searchBook(const vector<Book>& books) {
+    string keyword;
+    cout << "Enter search keyword (title, author, or ISBN): ";
+    cin.ignore();
+    getline(cin, keyword);
+    transform(keyword.begin(), keyword.end(), keyword.begin(), ::tolower);
+    cout << "Search Results:" << endl;
+    for (const auto& book : books) {
+        string title = book.title;
+        string author = book.author;
+        string isbn = book.ISBN;
+        transform(title.begin(), title.end(), title.begin(), ::tolower);
+        transform(author.begin(), author.end(), author.begin(), ::tolower);
+        if (title.find(keyword) != string::npos || author.find(keyword) != string::npos || isbn.find(keyword) != string::npos) {
+            cout << "Title: " << book.title << endl;
+            cout << "Author: " << book.author << endl;
+            cout << "ISBN: " << book.ISBN << endl;
+            cout << "Available: " << (book.available ? "Yes" : "No") << endl;
+            cout << endl;
+        }
+    }
+}
+
+// Function to perform book checkout
+void checkoutBook(vector<Book>& books, vector<Transaction>& transactions) {
+    string ISBN, borrowerName;
+    cout << "Enter ISBN of the book to check out: ";
+    cin >> ISBN;
+    cout << "Enter borrower name: ";
+    cin.ignore();
+    getline(cin, borrowerName);
+    for (auto& book : books) {
+        if (book.ISBN == ISBN && book.available) {
+            book.available = false;
+            Transaction transaction = {borrowerName, ISBN, false};
+            transactions.push_back(transaction);
+            cout << "Book checked out successfully." << endl;
+            return;
+        }
+    }
+    cout << "Book not found or not available for checkout." << endl;
+}
+
+// Function to perform book return
+void returnBook(vector<Book>& books, vector<Transaction>& transactions) {
+    string ISBN;
+    cout << "Enter ISBN of the book to return: ";
+    cin >> ISBN;
+    for (auto& transaction : transactions) {
+        if (transaction.ISBN == ISBN && !transaction.returned) {
+            transaction.returned = true;
+            for (auto& book : books) {
+                if (book.ISBN == ISBN) {
+                    book.available = true;
+                    cout << "Book returned successfully." << endl;
+                    return;
+                }
+            }
+        }
+    }
+    cout << "Book not found or already returned." << endl;
+}
+
+// Function to calculate fine for overdue books
+void calculateFine(const vector<Transaction>& transactions, const vector<Book>& books, vector<Fine>& fines) {
+    const double fineRate = 0.5; // Fine rate per day
+    const int maxDays = 7; // Maximum allowed days for borrowing
+    for (const auto& transaction : transactions) {
+        for (const auto& book : books) {
+            if (transaction.ISBN == book.ISBN && !transaction.returned) {
+                // Calculate fine only for overdue books
+                int daysOverdue = 0; // Assuming transaction dates are not tracked
+                if (daysOverdue > maxDays) {
+                    double fineAmount = fineRate * (daysOverdue - maxDays);
+                    fines.push_back({transaction.borrowerName, fineAmount});
+                }
+                break;
+            }
+        }
+    }
+}
+
+// Function to display fines
+void displayFines(const vector<Fine>& fines) {
+    if (fines.empty()) {
+        cout << "No fines to display." << endl;
+        return;
+    }
+    cout << "Fines Report:" << endl;
+    cout << setw(20) << left << "Borrower Name" << setw(10) << "Fine ($)" << endl;
+    cout << setfill('-') << setw(30) << "-" << setfill(' ') << endl;
+    for (const auto& fine : fines) {
+        cout << setw(20) << left << fine.borrowerName << setw(10) << fixed << setprecision(2) << fine.amount << endl;
+    }
+}
+
+// Function to display menu
+void displayMenu() {
+    cout << "Library Management System" << endl;
+    cout << "1. Add Book" << endl;
+    cout << "2. Search Book" << endl;
+    cout << "3. Check out Book" << endl;
+    cout << "4. Return Book" << endl;
+    cout << "5. Calculate Fine" << endl;
+    cout << "6. Display Fines" << endl;
+    cout << "7. Exit" << endl;
+    cout << "Enter your choice: ";
+}
+
+int main() {
+    vector<Book> books;
+    vector<Transaction> transactions;
+    vector<Fine> fines;
+
+    int choice;
+    do {
+        displayMenu();
+        cin >> choice;
+        switch (choice) {
+            case 1:
+                addBook(books);
+                break;
+            case 2:
+                searchBook(books);
+                break;
+            case 3:
+                checkoutBook(books, transactions);
+                break;
+            case 4:
+                returnBook(books, transactions);
+                break;
+            case 5:
+                calculateFine(transactions, books, fines);
+                cout << "Fine calculation completed." << endl;
+                break;
+            case 6:
+                displayFines(fines);
+                break;
+            case 7:
+                cout << "Exiting program." << endl;
+                break;
+            default:
+                cout << "Invalid choice. Please try again." << endl;
+        }
+    } while (choice != 7);
+
+    return 0;
+}
